@@ -17,19 +17,20 @@ const state = {
     {
       level: 'Medium SQL',
       question: 'Find highest salary from employees',
-      answer: /^select\s+max\(salary\)\s+from\s+employees;?$/i
+      answer: /^select\s+max\s*\(\s*salary\s*\)\s+from\s+employees;?$/i
     },
     {
       level: 'Hard SQL',
       question: 'Second highest salary from employees',
-      answer: /salary\s+<\s*\(select\s+max\(salary\)/i
+      answer: /salary\s*<\s*\(\s*select\s+max\s*\(\s*salary\s*\)/i
     }
   ]
 };
 
 const commands = {
   help() {
-    return `Commands:
+    return `
+Commands:
 help
 about
 projects
@@ -38,9 +39,9 @@ solve <answer>
 score
 theme
 resume
-type
-mode <assessment|portfolio>
-clear`;
+mode <portfolio|assessment>
+clear
+`;
   },
 
   about() {
@@ -48,12 +49,20 @@ clear`;
   },
 
   projects() {
-    return `<div class="card">Interactive Terminal Portfolio<br/>SQL Challenges · Typing Engine · Scoring</div>`;
+    return `
+<div class="card">
+  <strong>Interactive Terminal Portfolio</strong><br/>
+  SQL Challenges · Typing Engine · Scoring System
+</div>`;
   },
 
   challenge() {
     const c = state.challenges[state.challengeIndex];
-    return `<div class="card"><strong>${c.level}</strong><br/>${c.question}</div>`;
+    return `
+<div class="card">
+  <strong>${c.level}</strong><br/>
+  ${c.question}
+</div>`;
   },
 
   solve(input) {
@@ -80,11 +89,9 @@ clear`;
   },
 
   resume() {
-    const a = document.createElement('a');
-    a.href = 'resume.pdf';
-    a.download = 'resume.pdf';
-    a.click();
-    return 'Downloading resume...';
+    // GitHub Pages safe PDF open
+    window.open('./resume.pdf', '_blank');
+    return 'Opening resume...';
   },
 
   mode(arg) {
@@ -98,27 +105,25 @@ clear`;
   }
 };
 
-function typeText(text, speed = 12) {
-  return new Promise(resolve => {
-    let i = 0;
-    const span = document.createElement('span');
-    term.appendChild(span);
-    const timer = setInterval(() => {
-      span.innerHTML += text[i++] || '';
-      term.scrollTop = term.scrollHeight;
-      if (i >= text.length) {
-        clearInterval(timer);
-        resolve();
-      }
-    }, speed);
-  });
+function print(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  term.appendChild(div);
+  term.scrollTop = term.scrollHeight;
 }
 
 function prompt() {
   const line = document.createElement('div');
   line.className = 'cmdline';
-  line.innerHTML = `<span class="prompt">student@local:$</span>`;
+
+  const label = document.createElement('span');
+  label.className = 'prompt';
+  label.textContent = 'student@local:$';
+
   const input = document.createElement('input');
+  input.autocomplete = 'off';
+
+  line.appendChild(label);
   line.appendChild(input);
   term.appendChild(line);
   input.focus();
@@ -128,10 +133,12 @@ function prompt() {
       historyIndex = Math.max(0, historyIndex - 1);
       input.value = history[historyIndex] || '';
     }
+
     if (e.key === 'ArrowDown') {
       historyIndex = Math.min(history.length, historyIndex + 1);
       input.value = history[historyIndex] || '';
     }
+
     if (e.key === 'Enter') {
       const value = input.value.trim();
       history.push(value);
@@ -142,25 +149,42 @@ function prompt() {
   });
 }
 
-function print(html) {
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  term.appendChild(div);
-}
-
 function handle(text) {
   if (!text) return prompt();
+
   const [cmd, ...rest] = text.split(' ');
   const arg = rest.join(' ');
-  if (commands[cmd]) print(commands[cmd](arg));
-  else print(`<span class="error">Command not found</span>`);
+
+  if (commands[cmd]) {
+    print(commands[cmd](arg));
+  } else {
+    print(`<span class="error">Command not found</span>`);
+  }
+
   prompt();
+}
+
+function typeText(text, speed = 15) {
+  return new Promise(resolve => {
+    let i = 0;
+    const span = document.createElement('span');
+    term.appendChild(span);
+
+    const timer = setInterval(() => {
+      span.textContent += text[i++] || '';
+      term.scrollTop = term.scrollHeight;
+      if (i >= text.length) {
+        clearInterval(timer);
+        resolve();
+      }
+    }, speed);
+  });
 }
 
 async function boot() {
   await typeText("(!) Welcome to behindTheScenes' terminal (!) v1.0\n");
-  await typeText('Loading portfolio modules...\n');
-  await typeText('To begin, type help or hit enter key.\n\n');
+  await typeText("Loading portfolio modules...\n");
+  await typeText("Type 'help' to get started.\n\n");
   prompt();
 }
 
